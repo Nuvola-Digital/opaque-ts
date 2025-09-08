@@ -1,6 +1,6 @@
 {
-    "name": "@cloudflare/opaque-ts",
-    "version": "0.9.0",
+    "name": "@nuvola-digital/opaque-ts",
+    "version": "1.0.3",
     "description": "OPAQUE: Asymmetric Password-Authenticated Key Exchange in Typescript",
     "author": "Armando Faz <armfazh@cloudflare.com>",
     "maintainers": [
@@ -8,12 +8,20 @@
     ],
     "license": "BSD-3-Clause",
     "private": false,
-    "type": "module",
-    "main": "./lib/src/index.js",
-    "module": "./lib/src/index.js",
-    "types": "./lib/src/index.d.ts",
+    "main": "./lib-cjs/index.js",
+    "module": "./lib/index.js",
+    "types": "./lib/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./lib/index.js",
+            "require": "./lib-cjs/index.js",
+            "types": "./lib/index.d.ts",
+            "default": "./lib-cjs/index.js"
+        }
+    },
     "files": [
-        "lib/src/**/*.!(tsbuildinfo)"
+        "lib/**/*.!(tsbuildinfo)",
+        "lib-cjs/**/*.!(tsbuildinfo)"
     ],
     "keywords": [
         "opaque",
@@ -23,7 +31,7 @@
         "cryptography"
     ],
     "homepage": "https://github.com/cloudflare/opaque-ts#readme",
-    "repository": "github:cloudflare/opaque-ts",
+    "repository": "github:nuvola-digital/opaque-ts",
     "engines": {
         "node": ">=20"
     },
@@ -45,9 +53,9 @@
         "typescript-eslint": "7.15.0"
     },
     "scripts": {
-        "prepack": "tsc -b",
-        "prepare": "tsc -b",
-        "build": "tsc -b",
+        "prepack": "tsc -b && tsc -p tsconfig.cjs.json",
+        "prepare": "tsc -b && tsc -p tsconfig.cjs.json",
+        "build": "tsc -b && tsc -p tsconfig.cjs.json",
         "clean": "tsc -b --clean . test",
         "test": "tsc -b test && node --experimental-vm-modules ./node_modules/jest/bin/jest.js --ci --no-cache",
         "lint": "eslint .",

@@ -1,4 +1,5 @@
 coverage/
 dist/
 lib/
+lib-cjs/
 node_modules/

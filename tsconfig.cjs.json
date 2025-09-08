@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "target": "ES2022",
-        "module": "ES2022",
+        "module": "CommonJS",
         "lib": [
             "dom"
         ],
@@ -17,9 +17,8 @@
         "noFallthroughCasesInSwitch": true,
         "moduleResolution": "node",
         "esModuleInterop": true,
-        "verbatimModuleSyntax": true,
         "rootDir": "./src",
-        "outDir": "./lib"
+        "outDir": "./lib-cjs"
     },
     "include": [
         "src/**/*"
