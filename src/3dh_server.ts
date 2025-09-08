@@ -11,8 +11,6 @@ import { deriveKeys, preambleBuild, tripleDH_IKM } from './common.js'
 import type { Config } from './config.js'
 
 export class AKE3DHServer {
-    private expected?: ExpectedAuthResult
-
     constructor(private readonly config: Config) {}
 
     async response(
@@ -23,7 +21,7 @@ export class AKE3DHServer {
         context: Uint8Array,
         client_public_key: Uint8Array,
         client_identity?: Uint8Array
-    ): Promise<AuthResponse> {
+    ): Promise<{ auth_response: AuthResponse; expected: ExpectedAuthResult }> {
         const server_nonce = Uint8Array.from(this.config.prng.random(this.config.constants.Nn))
         const server_keyshare_seed = Uint8Array.from(
             this.config.prng.random(this.config.constants.Nseed)
@@ -49,7 +47,7 @@ export class AKE3DHServer {
         const server_mac = await (await this.config.mac.with_key(Km2)).sign(h_preamble)
         const h_preamble_mac = await this.config.hash.sum(joinAll([preamble, server_mac]))
         const expected_client_mac = await (await this.config.mac.with_key(Km3)).sign(h_preamble_mac)
-        this.expected = new ExpectedAuthResult(this.config, expected_client_mac, session_key)
+        const expected = new ExpectedAuthResult(this.config, expected_client_mac, session_key)
 
         const auth_response = new AuthResponse(
             this.config,
@@ -58,16 +56,16 @@ export class AKE3DHServer {
             server_mac
         )
 
-        return auth_response
+        return { auth_response, expected }
     }
 
-    finish(auth_finish: AuthFinish): { session_key: number[] } | Error {
-        if (!this.expected) {
+    finish(
+        auth_finish: AuthFinish,
+        expected: ExpectedAuthResult
+    ): { session_key: number[] } | Error {
+        if (!ctEqual(auth_finish.client_mac, expected.expected_client_mac)) {
             return new Error('handshake error')
         }
-        if (!ctEqual(auth_finish.client_mac, this.expected.expected_client_mac)) {
-            return new Error('handshake error')
-        }
-        return { session_key: Array.from(this.expected.session_key) }
+        return { session_key: Array.from(expected.session_key) }
     }
 }

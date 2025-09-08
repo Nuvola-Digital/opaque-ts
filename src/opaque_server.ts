@@ -5,6 +5,7 @@
 
 import type { AKEExportKeyPair, AKEKeyPair } from './thecrypto.js'
 import type {
+    ExpectedAuthResult,
     KE1,
     KE3,
     RegistrationRecord,
@@ -31,9 +32,9 @@ export interface AuthServer {
         credential_identifier: string,
         client_identity?: string,
         context?: string
-    ): Promise<KE2 | Error>
+    ): Promise<{ ke2: KE2; expected: ExpectedAuthResult } | Error>
 
-    authFinish(ke3: KE3): { session_key: number[] } | Error
+    authFinish(ke3: KE3, expected: ExpectedAuthResult): { session_key: number[] } | Error
 }
 
 export class OpaqueServer implements RegistrationServer, AuthServer {
@@ -85,7 +86,7 @@ export class OpaqueServer implements RegistrationServer, AuthServer {
         credential_identifier: string,
         client_identity?: string,
         context?: string
-    ): Promise<KE2 | Error> {
+    ): Promise<{ ke2: KE2; expected: ExpectedAuthResult } | Error> {
         const credential_identifier_u8array = new TextEncoder().encode(credential_identifier)
         const credential_response = await this.opaque_core.createCredentialResponse(
             ke1.credential_request,
@@ -97,7 +98,7 @@ export class OpaqueServer implements RegistrationServer, AuthServer {
         // eslint-disable-next-line no-undefined
         const client_identity_u8array = client_identity ? te.encode(client_identity) : undefined
         const context_u8array = context ? te.encode(context) : new Uint8Array(0)
-        const auth_response = await this.ake.response(
+        const response = await this.ake.response(
             this.ake_keypair.private_key,
             this.server_identity,
             ke1,
@@ -106,12 +107,13 @@ export class OpaqueServer implements RegistrationServer, AuthServer {
             record.client_public_key,
             client_identity_u8array
         )
+        const { auth_response, expected } = response
         const ke2 = new KE2(credential_response, auth_response)
 
-        return ke2
+        return { ke2, expected }
     }
 
-    authFinish(ke3: KE3): { session_key: number[] } | Error {
-        return this.ake.finish(ke3.auth_finish)
+    authFinish(ke3: KE3, expected: ExpectedAuthResult): { session_key: number[] } | Error {
+        return this.ake.finish(ke3.auth_finish, expected)
     }
 }
